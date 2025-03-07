@@ -15,9 +15,13 @@ export default class PlayerCache extends EntityCache<Player> {
   }
 
   /**
-   * Gets the cached version of a player.
-   * @param player The player to get the cached version of.
-   * @returns The cached version of the player.
+   * Retrieves a proxied version of the given player.
+   *
+   * If the provided player is already a proxy, it is returned as-is. Otherwise, a new
+   * proxy is created for the entity using an instance of `PlayerCache` as the proxy handler.
+   *
+   * @param player - The player to be proxied.
+   * @returns A proxied version of the input player.
    */
   public static get(player: Player): Player {
     if (isProxy(player)) {

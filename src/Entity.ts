@@ -20,9 +20,13 @@ export default class EntityCache<T extends Entity> extends AbstractCache<T> {
   }
 
   /**
-   * Gets the cached version of an entity.
-   * @param entity The entity to get the cached version of.
-   * @returns The cached version of the entity.
+   * Retrieves a proxied version of the given entity.
+   *
+   * If the provided entity is already a proxy, it is returned as-is. Otherwise, a new
+   * proxy is created for the entity using an instance of `EntityCache` as the proxy handler.
+   *
+   * @param entity - The entity to be proxied.
+   * @returns A proxied version of the input entity.
    */
   public static get(entity: Entity): Entity {
     if (isProxy(entity)) {
@@ -32,7 +36,11 @@ export default class EntityCache<T extends Entity> extends AbstractCache<T> {
   }
 
   /**
-   * Resets the cache of all entities.
+   * Clears both the primary entity cache and the dynamic properties cache.
+   *
+   * @remarks
+   * This method is used to reset the cache data by removing all cached entries,
+   * ensuring that subsequent operations work with a fresh state.
    */
   public static resetCache(): void {
     EntityCache._cache.clear();

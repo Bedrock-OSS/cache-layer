@@ -1,3 +1,5 @@
+import { system, world } from "@minecraft/server";
+
 export default abstract class AbstractCache<T extends object>
   implements ProxyHandler<T>
 {
@@ -26,6 +28,15 @@ export class ReplaceWithProxy<T extends object> implements ProxyHandler<T> {
   }
 }
 
+/**
+ * Represents the configuration for creating a proxy of an object using a cache mechanism.
+ *
+ * @template T - The type of the object to be proxied.
+ *
+ * @property handlerConstructor A function that receives an object of type T and returns an instance of AbstractCache<T>.
+ * @property predicate A function to test if a given object meets the criteria to be proxied.
+ * @property id A unique identifier for this proxy configuration.
+ */
 interface ProxyConstructor<T extends object> {
   handlerConstructor: (obj: T) => AbstractCache<T>;
   predicate: (obj: any) => boolean;
@@ -36,10 +47,17 @@ const proxies: ProxyConstructor<any>[] = [];
 const replaceWithProxy = new ReplaceWithProxy();
 
 /**
- * Registers a proxy for a specific type of object.
- * @param id The id of the proxy.
- * @param predicate A function that takes an object and returns true if it's a proxy for the given type.
- * @param handlerConstructor A function that takes an object and returns an instance of the proxy.
+ * Registers a proxy that associates a unique identifier with a predicate and a handler constructor.
+ *
+ * This function adds a new proxy configuration that can later be used to determine if a given object
+ * should be handled by the associated cache and to instantiate the appropriate cache handler.
+ *
+ * @template T - The type of objects that the cache and its corresponding handler will manage.
+ * @param id - A unique identifier for the proxy.
+ * @param predicate - A function that takes an object as input and returns true if the object meets the criteria
+ *                    for this proxy, and false otherwise.
+ * @param handlerConstructor - A function that, given an object of type T, returns an instance of AbstractCache<T>
+ *                             configured to handle that object.
  */
 export function registerProxy<T extends object>(
   id: string,
@@ -50,10 +68,21 @@ export function registerProxy<T extends object>(
 }
 
 /**
- * Proxifies an object, replacing it with a proxy if necessary.
- * @param obj The object to proxify.
- * @param thisObj The object that the proxified object will be bound to.
- * @returns The proxified object.
+ * Recursively wraps the target object or function in a proxy to enable customized behavior through handlers.
+ *
+ * - When the target is null or undefined, it is returned as-is.
+ * - If the target is already a proxy, the original proxy is returned to prevent double-wrapping.
+ * - For objects:
+ *   - If the object is an array, each element is processed with proxify.
+ *   - If a registered proxy predicate matches the object, a new proxy is created using its corresponding handler.
+ *   - Otherwise, a default proxy handler is applied.
+ * - For functions:
+ *   - A new function is returned that proxies all its received arguments.
+ *   - The result of invoking the original function is also processed with proxify.
+ *
+ * @param obj - The object or function to be proxified.
+ * @param thisObj - The context to bind when invoking functions.
+ * @returns The proxified object or function.
  */
 function proxify(obj: any, thisObj: any): any {
   if (obj === null || obj === undefined) {
@@ -87,18 +116,27 @@ function proxify(obj: any, thisObj: any): any {
 }
 
 /**
- * Checks if an object is a proxy.
- * @param obj The object to check.
- * @returns True if the object is a proxy, false otherwise.
+ * Determines whether the given object is a proxy.
+ *
+ * This function checks if the provided object contains the '__originalInstance__' property,
+ * which is used as an indicator that the object is a proxy of another instance.
+ *
+ * @param obj - The object to inspect.
+ * @returns True if the object is a proxy (i.e., contains the '__originalInstance__' property), false otherwise.
  */
 export function isProxy(obj: any): boolean {
   return !!obj.__originalInstance__;
 }
 
 /**
- * Returns the original instance of the object, if it's a proxy.
- * @param obj The object to get the original instance of.
- * @returns The original instance of the object.
+ * Returns the original instance of the provided object if it was wrapped.
+ *
+ * This function examines the given object for the presence of an `__originalInstance__`
+ * property. If this property is defined, its value is returned, indicating that the object
+ * is a wrapper around the actual instance. If not, the original object itself is returned.
+ *
+ * @param obj - The object that may contain an original instance.
+ * @returns The original instance if it exists; otherwise, the provided object.
  */
 export function getOriginalInstance<T>(obj: T): T {
   const orig = (obj as any).__originalInstance__;
@@ -107,3 +145,8 @@ export function getOriginalInstance<T>(obj: T): T {
   }
   return orig;
 }
+
+const worldCache = proxify(world, world);
+const systemCache = proxify(system, system);
+
+export { worldCache as world, systemCache as system };
