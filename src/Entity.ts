@@ -6,13 +6,11 @@ import {
   Vector3,
   world,
 } from "@minecraft/server";
-import { Bucket, IdBucket } from "./CacheBucket";
+import { Bucket } from "./CacheBucket";
 import AbstractCache, { isProxy, registerProxy } from "./AbstractCache";
 
-const DynamicPropertyBucket = "dynamicProperties";
-
 export default class EntityCache<T extends Entity> extends AbstractCache<T> {
-  private static dynamicPropertiesCache: IdBucket = new IdBucket();
+  private static dynamicPropertiesCache: Bucket = new Bucket();
   protected static _cache: Bucket = new Bucket();
   protected readonly id: string;
 
@@ -31,6 +29,14 @@ export default class EntityCache<T extends Entity> extends AbstractCache<T> {
       return entity;
     }
     return new Proxy(entity, new EntityCache(entity));
+  }
+
+  /**
+   * Resets the cache of all entities.
+   */
+  public static resetCache(): void {
+    EntityCache._cache.clear();
+    EntityCache.dynamicPropertiesCache.clear();
   }
 
   // Static initialization
@@ -110,7 +116,6 @@ export default class EntityCache<T extends Entity> extends AbstractCache<T> {
     identifier: string
   ): boolean | number | string | Vector3 | undefined {
     return EntityCache.dynamicPropertiesCache.get(
-      DynamicPropertyBucket,
       this.id,
       identifier,
       () => this.entity.getDynamicProperty(identifier)
@@ -121,7 +126,6 @@ export default class EntityCache<T extends Entity> extends AbstractCache<T> {
     value?: boolean | number | string | Vector3
   ): void {
     EntityCache.dynamicPropertiesCache.set(
-      DynamicPropertyBucket,
       this.id,
       identifier,
       value
@@ -129,7 +133,7 @@ export default class EntityCache<T extends Entity> extends AbstractCache<T> {
     this.entity.setDynamicProperty(identifier, value);
   }
   clearDynamicProperties(): void {
-    EntityCache.dynamicPropertiesCache.clear(DynamicPropertyBucket, this.id);
+    EntityCache.dynamicPropertiesCache.clear(this.id);
   }
 
   //#endregion
