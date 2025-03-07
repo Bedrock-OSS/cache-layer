@@ -5,21 +5,39 @@ jest.mock('@minecraft/server', () => {
   const mockEvent = {
     subscribe: jest.fn(),
   }
+  /**
+   * A class that keeps track of native method calls.
+   */
   class MockNative {
     private nativeCount: Record<string, number> = {};
+    /**
+     * Increments the count of a native method call.
+     * @param name The name of the native method.
+     */
     incCount(name: string): void {
       if (this.nativeCount[name] === undefined) {
         this.nativeCount[name] = 0;
       }
       this.nativeCount[name]++;
     }
+    /**
+     * Resets the count of all native method calls.
+     */
     resetCounters(): void {
       this.nativeCount = {};
     }
+    /**
+     * Gets the count of a native method call.
+     * @param name The name of the native method.
+     * @returns The count of the native method call.
+     */
     getCount(name: string): number {
       return this.nativeCount[name] || 0;
     }
   }
+  /**
+   * A class that adds dynamic properties to the mock.
+   */
   class MockDynamicProperties extends MockNative {
     private properties: Record<string, boolean | number | string | Vector3> = {};
     getDynamicProperty(identifier: string): boolean | number | string | Vector3 | undefined {
@@ -35,16 +53,25 @@ jest.mock('@minecraft/server', () => {
       }
     }
   }
+  /**
+   * A class that represents a dimension.
+   */
   class MockDimension extends MockNative {
     constructor(public readonly id: string) {
       super();
     }
   }
+  /**
+   * A map of dimensions.
+   */
   const dimensions: Record<string, MockDimension> = {
     "minecraft:overworld": new MockDimension("minecraft:overworld"),
     "minecraft:nether": new MockDimension("minecraft:nether"),
     "minecraft:the_end": new MockDimension("minecraft:the_end"),
   };
+  /**
+   * A class that represents an entity.
+   */
   class MockEntity extends MockDynamicProperties {
     private _dimension: Dimension;
     constructor(public readonly typeId: string, public readonly id: string) {
@@ -63,6 +90,9 @@ jest.mock('@minecraft/server', () => {
       return this._dimension;
     }
   }
+  /**
+   * A class that represents a player.
+   */
   class MockPlayer extends MockEntity {
     private gameMode: GameMode;
     constructor(id: string) {
@@ -78,6 +108,9 @@ jest.mock('@minecraft/server', () => {
       this.gameMode = gameMode;
     }
   }
+  /**
+   * A class that represents the world.
+   */
   class MockWorld extends MockDynamicProperties {
     public readonly afterEvents = {
       playerDimensionChange: mockEvent,
@@ -142,7 +175,6 @@ jest.mock('@minecraft/server', () => {
       },
     },
     world: new MockWorld() as any,
-    // Use the MockPlayer class as the Player export.
     Player: MockPlayer,
     Entity: MockEntity,
     World: MockWorld,
